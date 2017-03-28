@@ -2,78 +2,52 @@
 
 namespace App\Http\Controllers;
 
-use App\Admin;
-use Validator;
-use App\Http\Controllers\Controller;
-use Illuminate\Foundation\Auth\ThrottlesLogins;
-use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
+use Illuminate\Http\Request;
 
+use App\Http\Requests;
+use App\Http\Controllers\Controller;
+use Admin;
+use Auth;
+use Validator;
 
 class AdminController extends Controller
 {
-     /*
-    |--------------------------------------------------------------------------
-    | Registration & Login Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles the registration of new users, as well as the
-    | authentication of existing users. By default, this controller uses
-    | a simple trait to add these behaviors. Why don't you explore it?
-    |
-    */
-
-    use AuthenticatesAndRegistersUsers, ThrottlesLogins;
-
-    protected $guard = 'admin';
-
-    protected $loginVirw = 'auth.login-adm';
-
-
-    /**
-     * Where to redirect users after login / registration.
-     *
-     * @var string
-     */
-    protected $redirectTo = '/admin/login';
-
-    /**
-     * Create a new authentication controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
-        $this->middleware($this->guestMiddleware(), ['except' => 'logout']);
+    	// $this->middeware('auth');
     }
 
-    /**
-     * Get a validator for an incoming registration request.
-     *
-     * @param  array  $data
-     * @return \Illuminate\Contracts\Validation\Validator
-     */
-    protected function validator(array $data)
+    public function index()
     {
-        return Validator::make($data, [
-            'name' => 'required|max:255',
-            'email' => 'required|email|max:255|unique:admins',
-            'password' => 'required|min:6|confirmed',
-        ]);
+    	return view('admin.index');
     }
 
-    /**
-     * Create a new user instance after a valid registration.
-     *
-     * @param  array  $data
-     * @return User
-     */
-    protected function create(array $data)
+    public function login()
     {
-        return Admin::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => bcrypt($data['password']),
-            'admin' => $data['admin'],
-        ]);
+    	return view('auth.login-adm');
+    }
+
+    public function postLogin(Request $request)
+    {
+    	$validator = validator($request->all(), [
+    		'email' => 'required|min:3|max:100',
+    		'pasword' => 'required|min:3|max:100',
+    	]);
+
+        if ($validator->fails() ) {
+    		return redirect('/admin/login')
+    			->withErrors($validator)
+    			->withInput();
+    	}
+
+        $credentials = ['email' => $request->get('email'), 'password' => $request->get('password')];
+
+        if ( auth()->guard('admin')->attempt($credentials) ) {
+            return redirect('/admin/home');
+        } else {
+    		return redirect('/admin/login')
+    			->withErrors(['errors' => 'Login Inválido!'])
+    			->withInput();
+    	}
     }
 }
